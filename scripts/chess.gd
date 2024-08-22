@@ -4,6 +4,10 @@ const BOARD_SIZE = 8
 const CELLL_WIDTH = 18
 const OFFSET = (4 * CELLL_WIDTH)
 
+const BISHOP_DIRECTIONS  = [Vector2(1,1),Vector2(-1,-1),Vector2(1,-1),Vector2(-1,1)]
+const ROOK_DIRECTIONS  = [Vector2(1,0),Vector2(-1,0),Vector2(1,0),Vector2(-1,0)]
+const KNIGHT_DIRECTIONS = [Vector2(2,1),Vector2(2,-1),Vector2(1,2),Vector2(-1,2),Vector2(-2,1),Vector2(-2,-1),Vector2(1,-2),Vector2(-1,-2)]
+
 const BLACK_BISHOP = preload("res://assets/black_bishop.png")
 const BLACK_KING = preload("res://assets/black_king.png")
 const BLACK_KNIGHT = preload("res://assets/black_knight.png")
@@ -36,9 +40,10 @@ var selected_piece: Vector2
 func _ready() -> void:
 	board.append([4,2,3,5,6,3,2,4])
 	board.append([1,1,1,1,1,1,1,1])
-	for i in range(4):
-		board.append([0,0,0,0,0,0,0,0])
-		
+	board.append([0,0,0,0,0,0,0,0])
+	board.append([0,0,0,0,0,0,0,0])
+	board.append([0,0,0,0,0,0,0,0])
+	board.append([0,0,0,0,0,0,0,0])
 	board.append([-1,-1,-1,-1,-1,-1,-1,-1])
 	board.append([-4,-2,-3,-5,-6,-3,-2,-4])
 	display_board()
@@ -89,20 +94,76 @@ func show_options() -> void:
 	show_dots()
 
 func get_moves()->Array:
-	match abs(board[selected_piece.x][selected_piece.y]):
-		6: print("King")
-		5: print("Queen")
-		4: print("rook")
-		3: print("bishop")
-		2: print("knight")
-		1: print("Pawn")
-	return []
-
-func get_rook_moves() -> Array:
 	var _moves = []
-	var directions = [Vector2(0,1),Vector2(0,-1),Vector2(1,0),Vector2(-1,0)]
+	match abs(board[selected_piece.x][selected_piece.y]):
+		6: _moves = get_moves_for_movement_limited_pieces(ROOK_DIRECTIONS + BISHOP_DIRECTIONS)
+		5: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS + BISHOP_DIRECTIONS)
+		4: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS)
+		3: _moves = get_moves_for_inf_pieces(BISHOP_DIRECTIONS)
+		2: _moves = get_moves_for_movement_limited_pieces(KNIGHT_DIRECTIONS)
+		1: _moves = get_pawn_moves()
+	return _moves
+
+func get_pawn_moves()-> Array:
+	var _moves = []
+	var direction
+	var is_first_move = whiteToPlay && selected_piece.x == 1 || !whiteToPlay && selected_piece.x ==6
+	if whiteToPlay:
+		direction = Vector2(1,0)
+	else:
+		direction = Vector2(-1,0)
+	var pos = selected_piece + direction
+	if is_empty(pos):
+		_moves.append(pos)
+	pos = selected_piece + direction*2
+	if is_first_move && is_empty(pos) && is_empty(selected_piece + direction):
+		_moves.append(pos)
+	
+	pos = selected_piece + Vector2(direction.x, 1)
+	if is_valid_position(pos) && is_enemy(pos):
+		_moves.append(pos)
+	pos = selected_piece + Vector2(direction.x, -1)
+	if is_valid_position(pos) && is_enemy(pos):
+		_moves.append(pos)
 	
 	return _moves
+		
+func get_moves_for_inf_pieces(directions: Array) -> Array:
+	var _moves = []
+	for i in directions:
+		var pos = selected_piece
+		pos += i
+		while is_valid_position(pos):
+			if is_empty(pos):
+				_moves.append(pos)
+			elif is_enemy(pos):
+				_moves.append(pos)
+				break
+			else:
+				break
+			pos += i
+	return _moves
+
+func get_moves_for_movement_limited_pieces(directions: Array) -> Array:
+	var _moves = []
+	for i in directions:
+		var pos = selected_piece + i
+		if is_valid_position(pos):
+			if is_empty(pos):
+				_moves.append(pos)
+			elif is_enemy(pos):
+				_moves.append(pos)
+	return _moves
+	
+func is_valid_position(pos: Vector2) -> bool:
+	if pos.x >=0 && pos.x < BOARD_SIZE &&pos.y >=0 && pos.y < BOARD_SIZE: return true
+	return false
+
+func is_empty(pos: Vector2) -> bool:
+	return board[pos.x][pos.y] == 0
+
+func is_enemy(pos: Vector2) -> bool:
+	return whiteToPlay && board[pos.x][pos.y] < 0 || !whiteToPlay && board[pos.x][pos.y] > 0
 
 func show_dots() -> void:
 	for i in moves: 
