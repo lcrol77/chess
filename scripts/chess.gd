@@ -86,6 +86,7 @@ func is_mouse_out():
 	if get_global_mouse_position().x < 0 || get_global_mouse_position().x > 144 || get_global_mouse_position().y > 0 || get_global_mouse_position().y < -144: return true
 	return false
 
+
 func show_options() -> void:
 	moves = get_moves()
 	if moves == []:
