@@ -49,6 +49,8 @@ func _ready() -> void:
 	display_board()
 
 func display_board() -> void:
+	for child in pieces.get_children():
+		child.queue_free()
 	for i in BOARD_SIZE:
 		for j in BOARD_SIZE:
 			var holder = TEXTURE_HOLDER.instantiate()
@@ -68,6 +70,10 @@ func display_board() -> void:
 				3: holder.texture  = WHITE_BISHOP
 				2: holder.texture  = WHITE_KNIGHT
 				1: holder.texture  = WHITE_PAWN
+	if whiteToPlay:
+		turn.texture = TURN_WHITE
+	else: 
+		turn.texture = TURN_BLACK
 
 func _input(event) -> void:
 	if event is InputEventMouseButton && event.pressed:
@@ -79,6 +85,8 @@ func _input(event) -> void:
 				selected_piece = Vector2(_pos_y, _pos_x)
 				state = true
 				show_options()
+			elif state:
+				set_move(_pos_y, _pos_x)
 
 
 # checks if mouse is withing x and y bounds
@@ -172,6 +180,21 @@ func show_dots() -> void:
 		dots.add_child(holder)
 		holder.texture = PIECE_MOVE
 		holder.global_position = Vector2(i.y *CELLL_WIDTH + (CELLL_WIDTH/2),-i.x *CELLL_WIDTH - (CELLL_WIDTH/2))
+
+func delete_dots():
+	for child in dots.get_children():
+		child.queue_free()
+
+func set_move(_pos_y, _pos_x) -> void:
+	for i in moves:
+		if i.x == _pos_y && i.y == _pos_x:
+			board[_pos_y][_pos_x] = board[selected_piece.x][selected_piece.y]
+			board[selected_piece.x][selected_piece.y] = 0
+			whiteToPlay = !whiteToPlay
+			display_board()
+			break
+	delete_dots()
+	state = false
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
