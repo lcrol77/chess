@@ -29,12 +29,16 @@ const TEXTURE_HOLDER = preload("res://scenes/texture_holder.tscn")
 @onready var pieces: Node2D = $Pieces
 @onready var dots: Node2D = $Dots
 @onready var turn: Sprite2D = $Turn
+@onready var white_pieces: Control = $"../CanvasLayer/white_pieces"
+@onready var black_pieces: Control = $"../CanvasLayer/black_pieces"
 
 var board: Array
 var whiteToPlay: bool = true
 var state: bool = false
 var moves = []
 var selected_piece: Vector2
+
+var promotion_square = null;
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -47,6 +51,12 @@ func _ready() -> void:
 	board.append([-1,-1,-1,-1,-1,-1,-1,-1])
 	board.append([-4,-2,-3,-5,-6,-3,-2,-4])
 	display_board()
+	
+	var white_buttons:Array[Node]  = get_tree().get_nodes_in_group("white_pieces")
+	var black_buttons:Array[Node] = get_tree().get_nodes_in_group("black_pieces")
+	
+	for button: Button in white_buttons + black_buttons:
+		button.pressed.connect(self._on_button_pressed.bind(button))
 
 func display_board() -> void:
 	for child in pieces.get_children():
@@ -76,7 +86,7 @@ func display_board() -> void:
 		turn.texture = TURN_BLACK
 
 func _input(event) -> void:
-	if event is InputEventMouseButton && event.pressed:
+	if event is InputEventMouseButton && event.pressed && promotion_square == null:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if is_mouse_out(): return
 			var _pos_x = snapped(get_global_mouse_position().x,0) / CELLL_WIDTH
@@ -88,12 +98,10 @@ func _input(event) -> void:
 			elif state:
 				set_move(_pos_y, _pos_x)
 
-
 # checks if mouse is withing x and y bounds
 func is_mouse_out():
 	if get_global_mouse_position().x < 0 || get_global_mouse_position().x > 144 || get_global_mouse_position().y > 0 || get_global_mouse_position().y < -144: return true
 	return false
-
 
 func show_options() -> void:
 	moves = get_moves()
@@ -188,6 +196,13 @@ func delete_dots():
 func set_move(_pos_y, _pos_x) -> void:
 	for i in moves:
 		if i.x == _pos_y && i.y == _pos_x:
+			match board[selected_piece.x][selected_piece.y]:
+				1:
+					if i.x == 7:
+						promote(i)
+				-1:
+					if i.x == 0:
+						promote(i)
 			board[_pos_y][_pos_x] = board[selected_piece.x][selected_piece.y]
 			board[selected_piece.x][selected_piece.y] = 0
 			whiteToPlay = !whiteToPlay
@@ -196,6 +211,15 @@ func set_move(_pos_y, _pos_x) -> void:
 	delete_dots()
 	state = false
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+func promote(move: Vector2) -> void:
+	promotion_square = move
+	white_pieces.visible = whiteToPlay
+	black_pieces.visible = !whiteToPlay
+
+func _on_button_pressed(button: Button) -> void:
+	var num_char = int(button.name.substr(0,1))
+	board[promotion_square.x][promotion_square.y] = -num_char if whiteToPlay else num_char
+	white_pieces.visible = false
+	white_pieces.visible = false
+	promotion_square = null
+	display_board()
