@@ -5,7 +5,7 @@ const CELLL_WIDTH = 18
 const OFFSET = (4 * CELLL_WIDTH)
 
 const BISHOP_DIRECTIONS  = [Vector2(1,1),Vector2(-1,-1),Vector2(1,-1),Vector2(-1,1)]
-const ROOK_DIRECTIONS  = [Vector2(1,0),Vector2(-1,0),Vector2(1,0),Vector2(-1,0)]
+const ROOK_DIRECTIONS  = [Vector2(1,0),Vector2(0,-1),Vector2(0,1),Vector2(-1,0)]
 const KNIGHT_DIRECTIONS = [Vector2(2,1),Vector2(2,-1),Vector2(1,2),Vector2(-1,2),Vector2(-2,1),Vector2(-2,-1),Vector2(1,-2),Vector2(-1,-2)]
 
 const BLACK_BISHOP = preload("res://assets/black_bishop.png")
@@ -39,6 +39,13 @@ var moves = []
 var selected_piece: Vector2
 
 var promotion_square = null;
+
+var white_king_has_moved = false
+var black_king_has_moved = false
+var white_rook_right_has_moved = false
+var white_rook_left_has_moved = false
+var black_rook_right_has_moved = false
+var black_rook_left_has_moved = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -113,7 +120,7 @@ func show_options() -> void:
 func get_moves()->Array:
 	var _moves = []
 	match abs(board[selected_piece.x][selected_piece.y]):
-		6: _moves = get_moves_for_movement_limited_pieces(ROOK_DIRECTIONS + BISHOP_DIRECTIONS)
+		6: _moves = get_king_moves(ROOK_DIRECTIONS + BISHOP_DIRECTIONS)
 		5: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS + BISHOP_DIRECTIONS)
 		4: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS)
 		3: _moves = get_moves_for_inf_pieces(BISHOP_DIRECTIONS)
@@ -171,7 +178,29 @@ func get_moves_for_movement_limited_pieces(directions: Array) -> Array:
 			elif is_enemy(pos):
 				_moves.append(pos)
 	return _moves
-	
+
+func get_king_moves(directions: Array) -> Array:
+	var _moves = []
+	for i in directions:
+		var pos = selected_piece + i
+		if is_valid_position(pos):
+			if is_empty(pos):
+				_moves.append(pos)
+			elif is_enemy(pos):
+				_moves.append(pos)
+
+	if whiteToPlay && !white_king_has_moved:
+		if !white_rook_left_has_moved && is_empty(Vector2(0,1)) && is_empty(Vector2(0,2)) && is_empty(Vector2(0,3)):
+			_moves.append(Vector2(0,2))
+		if !white_rook_right_has_moved && is_empty(Vector2(0,5)) && is_empty(Vector2(0,6)):
+			_moves.append(Vector2(0,6))
+	elif !whiteToPlay && !black_king_has_moved:
+		if !black_rook_left_has_moved && is_empty(Vector2(7,1)) && is_empty(Vector2(7,2)) && is_empty(Vector2(7,3)):
+			_moves.append(Vector2(7,2))
+		if !black_rook_right_has_moved && is_empty(Vector2(7,5)) && is_empty(Vector2(7,6)):
+			_moves.append(Vector2(7,6))
+	return _moves
+
 func is_valid_position(pos: Vector2) -> bool:
 	if pos.x >=0 && pos.x < BOARD_SIZE &&pos.y >=0 && pos.y < BOARD_SIZE: return true
 	return false
@@ -203,6 +232,38 @@ func set_move(_pos_y, _pos_x) -> void:
 				-1:
 					if i.x == 0:
 						promote(i)
+				4:
+					if selected_piece.x == 0 && selected_piece.y ==0: white_rook_left_has_moved = true
+					if selected_piece.x == 0 && selected_piece.y ==7: white_rook_right_has_moved = true
+				-4:
+					if selected_piece.x == 7 && selected_piece.y ==0: black_rook_left_has_moved = true
+					if selected_piece.x == 7 && selected_piece.y ==7: black_rook_right_has_moved = true
+				6:
+					if selected_piece.x == 0 && selected_piece.y == 4:
+						white_king_has_moved = true
+						if i.y==2:
+							white_rook_left_has_moved = true
+							white_rook_right_has_moved = true
+							board[0][0] = 0
+							board[0][3] = 4
+						elif i.y==6:
+							white_rook_left_has_moved = true
+							white_rook_right_has_moved = true
+							board[0][7] = 0
+							board[0][5] = 4
+				-6:
+					if selected_piece.x == 7 && selected_piece.y == 4:
+						black_king_has_moved = true
+						if i.y==2:
+							black_rook_left_has_moved = true
+							black_rook_right_has_moved = true
+							board[7][7] = 0
+							board[7][3] = -4
+						elif i.y==6:
+							black_rook_left_has_moved = true
+							black_rook_right_has_moved = true
+							board[7][7] = 0
+							board[7][5] = -4
 			board[_pos_y][_pos_x] = board[selected_piece.x][selected_piece.y]
 			board[selected_piece.x][selected_piece.y] = 0
 			whiteToPlay = !whiteToPlay
