@@ -47,6 +47,8 @@ var white_rook_left_has_moved = false
 var black_rook_right_has_moved = false
 var black_rook_left_has_moved = false
 
+var en_passant = null
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	board.append([4,2,3,5,6,3,2,4])
@@ -136,6 +138,10 @@ func get_pawn_moves()-> Array:
 		direction = Vector2(1,0)
 	else:
 		direction = Vector2(-1,0)
+	
+	if en_passant != null &&  (whiteToPlay && selected_piece.x == 4 || !whiteToPlay &&selected_piece.x == 3) && abs(en_passant.y - selected_piece.y) == 1:
+		_moves.append(en_passant + direction)
+		
 	var pos = selected_piece + direction
 	if is_empty(pos):
 		_moves.append(pos)
@@ -223,15 +229,27 @@ func delete_dots():
 		child.queue_free()
 
 func set_move(_pos_y, _pos_x) -> void:
+	var just_now = false
 	for i in moves:
 		if i.x == _pos_y && i.y == _pos_x:
 			match board[selected_piece.x][selected_piece.y]:
 				1:
-					if i.x == 7:
-						promote(i)
+					if i.x == 7: promote(i)
+					if i.x == 3 && selected_piece.x == 1:
+						en_passant = i
+						just_now = true
+					elif en_passant != null:
+						if en_passant.y== i.y && selected_piece.y!= i.y && en_passant.x ==selected_piece.x:
+							board[en_passant.x][en_passant.y] = 0
 				-1:
 					if i.x == 0:
 						promote(i)
+					if i.x == 4 && selected_piece.x == 6:
+						en_passant = i
+						just_now = true
+					elif en_passant != null:
+						if en_passant.y== i.y && selected_piece.y!= i.y && en_passant.x ==selected_piece.x:
+							board[en_passant.x][en_passant.y] = 0
 				4:
 					if selected_piece.x == 0 && selected_piece.y ==0: white_rook_left_has_moved = true
 					if selected_piece.x == 0 && selected_piece.y ==7: white_rook_right_has_moved = true
@@ -264,6 +282,7 @@ func set_move(_pos_y, _pos_x) -> void:
 							black_rook_right_has_moved = true
 							board[7][7] = 0
 							board[7][5] = -4
+			if !just_now: en_passant = null
 			board[_pos_y][_pos_x] = board[selected_piece.x][selected_piece.y]
 			board[selected_piece.x][selected_piece.y] = 0
 			whiteToPlay = !whiteToPlay
