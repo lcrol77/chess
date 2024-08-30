@@ -360,6 +360,14 @@ func set_move(_pos_y, _pos_x) -> void:
 			break
 	delete_dots()
 	state = false
+	
+	
+	if is_stalemate():
+		if whiteToPlay && is_in_check(white_king_pos) || !whiteToPlay && is_in_check(black_king_pos):
+			print("CHECKMATE")
+		else:
+			print("DRAW")
+			
 
 func is_in_check(king_pos: Vector2) -> bool:
 	var directions: Array = BISHOP_DIRECTIONS + ROOK_DIRECTIONS
@@ -404,3 +412,16 @@ func _on_button_pressed(button: Button) -> void:
 	white_pieces.visible = false
 	promotion_square = null
 	display_board()
+	
+func is_stalemate():
+	if whiteToPlay:
+		for x in BOARD_SIZE:
+			for y in BOARD_SIZE:
+				if board[x][y] > 0:
+					if len(get_moves(Vector2(x,y))) !=0: return false
+	else:
+		for x in BOARD_SIZE:
+			for y in BOARD_SIZE:
+				if board[x][y] < 0:
+					if len(get_moves(Vector2(x,y))) !=0: return false
+	return true
