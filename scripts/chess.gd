@@ -115,87 +115,142 @@ func is_mouse_out():
 	return false
 
 func show_options() -> void:
-	moves = get_moves()
+	moves = get_moves(selected_piece)
 	if moves == []:
 		state = false
 		return
 	show_dots()
 
-func get_moves()->Array:
+func get_moves(selected: Vector2)->Array:
 	var _moves = []
-	match abs(board[selected_piece.x][selected_piece.y]):
-		6: _moves = get_king_moves(ROOK_DIRECTIONS + BISHOP_DIRECTIONS)
-		5: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS + BISHOP_DIRECTIONS)
-		4: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS)
-		3: _moves = get_moves_for_inf_pieces(BISHOP_DIRECTIONS)
-		2: _moves = get_moves_for_movement_limited_pieces(KNIGHT_DIRECTIONS)
-		1: _moves = get_pawn_moves()
+	match abs(board[selected.x][selected.y]):
+		6: _moves = get_king_moves(ROOK_DIRECTIONS + BISHOP_DIRECTIONS, selected)
+		5: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS + BISHOP_DIRECTIONS, selected)
+		4: _moves = get_moves_for_inf_pieces(ROOK_DIRECTIONS, selected)
+		3: _moves = get_moves_for_inf_pieces(BISHOP_DIRECTIONS, selected)
+		2: _moves = get_moves_for_movement_limited_pieces(KNIGHT_DIRECTIONS, selected)
+		1: _moves = get_pawn_moves(selected)
 	return _moves
 
-func get_pawn_moves()-> Array:
+func get_pawn_moves(selected: Vector2)-> Array:
 	var _moves = []
 	var direction
-	var is_first_move = whiteToPlay && selected_piece.x == 1 || !whiteToPlay && selected_piece.x ==6
+	var is_first_move = whiteToPlay && selected.x == 1 || !whiteToPlay && selected.x ==6
+	var piece: int = board[selected.x][selected.y]
 	if whiteToPlay:
 		direction = Vector2(1,0)
 	else:
 		direction = Vector2(-1,0)
 	
-	if en_passant != null &&  (whiteToPlay && selected_piece.x == 4 || !whiteToPlay &&selected_piece.x == 3) && abs(en_passant.y - selected_piece.y) == 1:
-		_moves.append(en_passant + direction)
+	if en_passant != null &&  (whiteToPlay && selected.x == 4 || !whiteToPlay &&selected.x == 3) && abs(en_passant.y - selected.y) == 1:
+		var pos = en_passant + direction
+		var other = board[en_passant.x][en_passant.y]
+		board[pos.x][pos.y] = piece
+		board[selected.x][selected.y] = 0
+		board[en_passant.x][en_passant.y] = 0
+		if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+			_moves.append(pos)
+		board[en_passant.x][en_passant.y] = other
+		board[pos.x][pos.y] =0
+		board[selected.x][selected.y] = piece
 		
-	var pos = selected_piece + direction
+	var pos = selected + direction
 	if is_empty(pos):
-		_moves.append(pos)
-	pos = selected_piece + direction*2
-	if is_first_move && is_empty(pos) && is_empty(selected_piece + direction):
-		_moves.append(pos)
+		board[pos.x][pos.y] = piece
+		board[selected.x][selected.y] = 0
+		if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+			_moves.append(pos)
+		board[pos.x][pos.y] =0
+		board[selected.x][selected.y] = piece
+	pos = selected + direction*2
+	if is_first_move && is_empty(pos) && is_empty(selected + direction):
+		board[pos.x][pos.y] = piece
+		board[selected.x][selected.y] = 0
+		if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+			_moves.append(pos)
+		board[pos.x][pos.y] =0
+		board[selected.x][selected.y] = piece
 	
-	pos = selected_piece + Vector2(direction.x, 1)
+	pos = selected + Vector2(direction.x, 1)
 	if is_valid_position(pos) && is_enemy(pos):
-		_moves.append(pos)
-	pos = selected_piece + Vector2(direction.x, -1)
+		var other = board[pos.x][pos.y]
+		board[pos.x][pos.y] = piece
+		board[selected.x][selected.y] = other
+		if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+			_moves.append(pos)
+		board[pos.x][pos.y] =other
+		board[selected.x][selected.y] = piece
+	pos = selected + Vector2(direction.x, -1)
 	if is_valid_position(pos) && is_enemy(pos):
-		_moves.append(pos)
+		var other = board[pos.x][pos.y]
+		board[pos.x][pos.y] = piece
+		board[selected.x][selected.y] = other
+		if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+			_moves.append(pos)
+		board[pos.x][pos.y] = other
+		board[selected.x][selected.y] = piece
 	
 	return _moves
 		
-func get_moves_for_inf_pieces(directions: Array) -> Array:
+func get_moves_for_inf_pieces(directions: Array, selected: Vector2) -> Array:
 	var _moves = []
+	var piece: int = board[selected.x][selected.y]
 	for i in directions:
-		var pos = selected_piece
+		var pos = selected
 		pos += i
 		while is_valid_position(pos):
 			if is_empty(pos):
-				_moves.append(pos)
+				board[pos.x][pos.y] = piece
+				board[selected.x][selected.y] = 0
+				if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+					_moves.append(pos)
+				board[pos.x][pos.y] =0
+				board[selected.x][selected.y] = piece
 			elif is_enemy(pos):
-				_moves.append(pos)
+				var other = board[pos.x][pos.y]
+				board[pos.x][pos.y] = piece
+				board[selected.x][selected.y] = other
+				if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+					_moves.append(pos)
+				board[pos.x][pos.y] =other
+				board[selected.x][selected.y] = piece
 				break
 			else:
 				break
 			pos += i
 	return _moves
 
-func get_moves_for_movement_limited_pieces(directions: Array) -> Array:
+func get_moves_for_movement_limited_pieces(directions: Array, selected: Vector2) -> Array:
 	var _moves = []
+	var piece: int = board[selected.x][selected.y]
 	for i in directions:
-		var pos = selected_piece + i
+		var pos = selected + i
 		if is_valid_position(pos):
 			if is_empty(pos):
-				_moves.append(pos)
+				board[pos.x][pos.y] = piece
+				board[selected.x][selected.y] = 0
+				if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+					_moves.append(pos)
+				board[pos.x][pos.y] =0
+				board[selected.x][selected.y] = piece
 			elif is_enemy(pos):
-				_moves.append(pos)
+				var other = board[pos.x][pos.y]
+				board[pos.x][pos.y] = piece
+				board[selected.x][selected.y] = other
+				if whiteToPlay && !is_in_check(white_king_pos) || !whiteToPlay && !is_in_check(black_king_pos):
+					_moves.append(pos)
+				board[pos.x][pos.y] =other
+				board[selected.x][selected.y] = piece
 	return _moves
 
-func get_king_moves(directions: Array) -> Array:
+func get_king_moves(directions: Array, selected: Vector2) -> Array:
 	var _moves = []
-	
 	if whiteToPlay:
 		board[white_king_pos.x][white_king_pos.y] = 0
 	else:
 		board[black_king_pos.x][black_king_pos.y] = 0
 	for i in directions:
-		var pos = selected_piece + i
+		var pos = selected + i
 		if is_valid_position(pos):
 			if !is_in_check(pos):
 				if is_empty(pos):
@@ -204,14 +259,14 @@ func get_king_moves(directions: Array) -> Array:
 					_moves.append(pos)
 
 	if whiteToPlay && !white_king_has_moved:
-		if !white_rook_left_has_moved && is_empty(Vector2(0,1)) && is_empty(Vector2(0,2)) && is_empty(Vector2(0,3)):
+		if !white_rook_left_has_moved && is_empty(Vector2(0,1)) && is_empty(Vector2(0,2)) && is_empty(Vector2(0,3)) && !is_in_check(Vector2(0,1)) && !is_in_check(Vector2(0,2)) && !is_in_check(Vector2(0,3)) :
 			_moves.append(Vector2(0,2))
-		if !white_rook_right_has_moved && is_empty(Vector2(0,5)) && is_empty(Vector2(0,6)):
+		if !white_rook_right_has_moved && is_empty(Vector2(0,5)) && is_empty(Vector2(0,6)) && !is_in_check(Vector2(0,5)) && !is_in_check(Vector2(0,6)):
 			_moves.append(Vector2(0,6))
 	elif !whiteToPlay && !black_king_has_moved:
-		if !black_rook_left_has_moved && is_empty(Vector2(7,1)) && is_empty(Vector2(7,2)) && is_empty(Vector2(7,3)):
+		if !black_rook_left_has_moved && is_empty(Vector2(7,1)) && is_empty(Vector2(7,2)) && is_empty(Vector2(7,3)) && !is_in_check(Vector2(7,1)) && !is_in_check(Vector2(7,2)) && !is_in_check(Vector2(7,3)):
 			_moves.append(Vector2(7,2))
-		if !black_rook_right_has_moved && is_empty(Vector2(7,5)) && is_empty(Vector2(7,6)):
+		if !black_rook_right_has_moved && is_empty(Vector2(7,5)) && is_empty(Vector2(7,6)) && !is_in_check(Vector2(7,5)) && !is_in_check(Vector2(7,6)):
 			_moves.append(Vector2(7,6))
 	if whiteToPlay:
 		board[white_king_pos.x][white_king_pos.y] = 6
@@ -311,7 +366,7 @@ func is_in_check(king_pos: Vector2) -> bool:
 	var pawn_direction = 1 if whiteToPlay else -1
 	var pawn_attacks = [
 		king_pos + Vector2(pawn_direction, 1),
-		king_pos + Vector2(pawn_direction, 1)
+		king_pos + Vector2(pawn_direction, -1)
 	]
 	for i in pawn_attacks:
 		if is_valid_position(i):
@@ -326,8 +381,8 @@ func is_in_check(king_pos: Vector2) -> bool:
 			if !is_empty(pos):
 				var piece = board[pos.x][pos.y]
 				# in order for a horizontal / vertical peice to be attacking us we need x OR y to be zero
-				if (direction.x == 0 || direction.y ==0) && (whiteToPlay && piece in [-4,-5]) ||(!whiteToPlay && piece in [4,5]): return true
-				elif (direction.x != 0 && direction.y !=0) && (whiteToPlay && piece in [-3,-5]) ||(!whiteToPlay && piece in [3,5]): return true
+				if (direction.x == 0 || direction.y ==0) && ((whiteToPlay && piece in [-4,-5]) ||(!whiteToPlay && piece in [4,5])): return true
+				elif (direction.x != 0 && direction.y !=0) && ((whiteToPlay && piece in [-3,-5]) ||(!whiteToPlay && piece in [3,5])): return true
 				break
 			pos += direction
 	for direction in KNIGHT_DIRECTIONS:
