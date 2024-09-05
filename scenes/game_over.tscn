@@ -1,0 +1,53 @@
+[gd_scene load_steps=2 format=3 uid="uid://dwfe2efevfqg4"]
+
+[sub_resource type="Theme" id="Theme_ai47x"]
+
+[node name="GameOver" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -407.5
+offset_top = 146.0
+offset_right = 407.5
+offset_bottom = 313.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 200
+text = "GAME OVER"
+
+[node name="VboxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -262.0
+offset_top = -477.915
+offset_right = 262.0
+offset_bottom = -213.88
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 20
+
+[node name="PlayAgain" type="Button" parent="VboxContainer"]
+custom_minimum_size = Vector2(0, 90)
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 80
+text = "PLAY AGAIN"
+
+[node name="Quit" type="Button" parent="VboxContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+theme = SubResource("Theme_ai47x")
+theme_override_font_sizes/font_size = 80
+text = "QUIT"
