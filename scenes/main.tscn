@@ -89,6 +89,7 @@ texture = ExtResource("8_f7hdq")
 [node name="Main" type="Node2D"]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
 
 [node name="white_pieces" type="Control" parent="CanvasLayer"]
 visible = false

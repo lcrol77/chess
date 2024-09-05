@@ -1,4 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://dwfe2efevfqg4"]
+[gd_scene load_steps=3 format=3 uid="uid://dwfe2efevfqg4"]
+
+[ext_resource type="Script" path="res://scripts/game_over.gd" id="1_yl734"]
 
 [sub_resource type="Theme" id="Theme_ai47x"]
 
@@ -9,6 +11,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_yl734")
 
 [node name="Label" type="Label" parent="."]
 layout_mode = 1
@@ -51,3 +54,6 @@ size_flags_vertical = 0
 theme = SubResource("Theme_ai47x")
 theme_override_font_sizes/font_size = 80
 text = "QUIT"
+
+[connection signal="pressed" from="VboxContainer/PlayAgain" to="." method="_on_play_again_pressed"]
+[connection signal="pressed" from="VboxContainer/Quit" to="." method="_on_quit_pressed"]

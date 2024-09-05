@@ -4,10 +4,11 @@ const BOARD_SIZE = 8
 const CELLL_WIDTH = 18
 const OFFSET = (4 * CELLL_WIDTH)
 
+const GAME_OVER:PackedScene = preload("res://scenes/game_over.tscn")
+
 const BISHOP_DIRECTIONS  = [Vector2(1,1),Vector2(-1,-1),Vector2(1,-1),Vector2(-1,1)]
 const ROOK_DIRECTIONS  = [Vector2(1,0),Vector2(0,-1),Vector2(0,1),Vector2(-1,0)]
 const KNIGHT_DIRECTIONS = [Vector2(2,1),Vector2(2,-1),Vector2(1,2),Vector2(-1,2),Vector2(-2,1),Vector2(-2,-1),Vector2(1,-2),Vector2(-1,-2)]
-
 const BLACK_BISHOP = preload("res://assets/black_bishop.png")
 const BLACK_KING = preload("res://assets/black_king.png")
 const BLACK_KNIGHT = preload("res://assets/black_knight.png")
@@ -68,6 +69,35 @@ func _ready() -> void:
 	
 	for button: Button in white_buttons + black_buttons:
 		button.pressed.connect(self._on_button_pressed.bind(button))
+
+func reset_game() -> void:
+	board = []
+	board.append([4,2,3,5,6,3,2,4])
+	board.append([1,1,1,1,1,1,1,1])
+	board.append([0,0,0,0,0,0,0,0])
+	board.append([0,0,0,0,0,0,0,0])
+	board.append([0,0,0,0,0,0,0,0])
+	board.append([0,0,0,0,0,0,0,0])
+	board.append([-1,-1,-1,-1,-1,-1,-1,-1])
+	board.append([-4,-2,-3,-5,-6,-3,-2,-4])
+	
+	whiteToPlay= true
+	state= false
+	moves = []
+	promotion_square = null;
+
+	white_king_has_moved = false
+	black_king_has_moved = false
+	white_rook_right_has_moved = false
+	white_rook_left_has_moved = false
+	black_rook_right_has_moved = false
+	black_rook_left_has_moved = false
+
+	en_passant = null
+
+	white_king_pos = Vector2(0,4)
+	black_king_pos = Vector2(7,4)
+	display_board()
 
 func display_board() -> void:
 	for child in pieces.get_children():
@@ -364,11 +394,19 @@ func set_move(_pos_y, _pos_x) -> void:
 	
 	if is_stalemate():
 		if whiteToPlay && is_in_check(white_king_pos) || !whiteToPlay && is_in_check(black_king_pos):
-			print("CHECKMATE")
+			if whiteToPlay:
+				show_game_over("BLACK WINS")
+			else:
+				show_game_over("WHITE WINS")
 		else:
-			print("DRAW")
-			
+			show_game_over("DRAW")
 
+func show_game_over(display_text: String)->void:
+	var instance = GAME_OVER.instantiate()
+	%CanvasLayer.add_child(instance)
+	instance.get_node("Label").text = display_text
+	instance.retry.connect(reset_game)
+	
 func is_in_check(king_pos: Vector2) -> bool:
 	var directions: Array = BISHOP_DIRECTIONS + ROOK_DIRECTIONS
 	var pawn_direction = 1 if whiteToPlay else -1
